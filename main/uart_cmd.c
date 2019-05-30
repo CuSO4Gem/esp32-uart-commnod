@@ -15,6 +15,7 @@
 
 static const char *UART_TAG = "uart_events";
 static QueueHandle_t uart0_queue;
+static uart_cmd_cb_t uart_cmd_callback = NULL;
 
 static void uart_event_task(void *pvParameters)
 {
@@ -24,9 +25,9 @@ static void uart_event_task(void *pvParameters)
     static uint16_t date_point = 0; 
     for(;;) {
         if(xQueueReceive(uart0_queue, (void * )&event, (portTickType)portMAX_DELAY)) {
-            bzero(dtmp, RD_BUF_SIZE);
+            switch(event.type) {
                 case UART_DATA:
-					if((date_point+event.size)<(RD_BUF_SIZE-1))
+                    if((date_point+event.size)<(RD_BUF_SIZE-1))
                     {
                         uart_read_bytes(EX_UART_NUM, dtmp+date_point, event.size, portMAX_DELAY);
                         uart_write_bytes(EX_UART_NUM, (const char*)(dtmp+date_point), event.size);//输入回环
@@ -34,32 +35,17 @@ static void uart_event_task(void *pvParameters)
                         
                         if(date_point>0 )
                         {
-                            /*和picocom有关，输入回车后会得到一个\r，这里我们认为输入结束了
-                                it is relevent to picocom. After input "ENTER", esp32 will recive '\r'.
-                                We consider it is a end of command*/
-                            if(dtmp[date_point-1] == '\r')
+                            if(dtmp[date_point-1] == '\r')/*和picocom有关，输入回车后会得到一个\r，这里我们认为输入结束了*/
                             {
-                                dtmp[date_point] = '\n';//add a '\n' in the end of string.
-                                /*
-                                    ADD COMMOND  ANALYSIS
-                                    
-                                ((      /|_/|
-                                \\.._.'  , ,\
-                                /\ | '.__ v / 
-                                (_ .   /   "         
-                                ) _)._  _ /
-                                '.\ \|( / ( 
-                                '' ''\\ \\
-                                */
-
+                                dtmp[date_point] = '\n';
+                                if(uart_cmd_callback != NULL)
+                                    uart_cmd_callback(dtmp,date_point);
                                 uart_write_bytes(EX_UART_NUM, "\r\ncomd:", 8);
                                 date_point = 0;
                             }
-                            /*这是ctrl+c的取消命令 
-                                recive ctrl+c, that is mean cancel*/
-                            else if(dtmp[date_point-1] == 0x03)
+                            else if(dtmp[date_point-1] == 0x03)//这是ctrl+c的取消命令
                             {
-                                uart_write_bytes(EX_UART_NUM, "\r\n^C\r\ncomd:", 12);//换行
+                                uart_write_bytes(EX_UART_NUM, "\r\n^C\r\ncomd:", 12);
                             }
                         }
                         
@@ -69,7 +55,6 @@ static void uart_event_task(void *pvParameters)
                         date_point = 0;
                         ESP_LOGI(UART_TAG, "recive buffer overflow");
                     }
-                    break;
                     break;
                 //Event of HW FIFO overflow detected
                 case UART_FIFO_OVF:
@@ -160,4 +145,10 @@ void uart_cmd_init(UBaseType_t uxPriority)
 
     //Create a task to handler UART event from ISR
     xTaskCreate(uart_event_task, "uart_event_task", 2048, NULL, uxPriority, NULL);
+}
+
+void uart_cmd_register_callback(uart_cmd_cb_t callback)
+{
+    uart_cmd_callback = callback;
+    return;
 }
