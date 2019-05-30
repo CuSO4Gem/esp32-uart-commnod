@@ -6,6 +6,6 @@ This is a project bease on uart_events example program. Esp32 can recive string 
 
 # How to use it?
 
-void uart_cmd_init(UBaseType_t uxPriority);函数初始化就可以使用了
+包括uart_cmd.c和uart_cmd.h两个文件，具体函数查看uart_cmd.h
 
-Vnitialize by void uart_cmd_init(UBaseType_t uxPriority); funtion.
+The libary include uart_cmd.c and uart_cmd.h. It is easy to understand by read uart_cmd.h
