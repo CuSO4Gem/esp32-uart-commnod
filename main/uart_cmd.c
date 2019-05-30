@@ -23,14 +23,8 @@ static void uart_event_task(void *pvParameters)
     uint8_t* dtmp = (uint8_t*) malloc(RD_BUF_SIZE);
     static uint16_t date_point = 0; 
     for(;;) {
-        //Waiting for UART event.
         if(xQueueReceive(uart0_queue, (void * )&event, (portTickType)portMAX_DELAY)) {
             bzero(dtmp, RD_BUF_SIZE);
-            switch(event.type) {
-                //Event of UART receving data
-                /*We'd better handler data event fast, there would be much more data events than
-                other types of events. If we take too much time on data event, the queue might
-                be full.*/
                 case UART_DATA:
 					if((date_point+event.size)<(RD_BUF_SIZE-1))
                     {
@@ -40,13 +34,30 @@ static void uart_event_task(void *pvParameters)
                         
                         if(date_point>0 )
                         {
-                            if(dtmp[date_point-1] == '\r')/*和picocom有关，输入回车后会得到一个\r，这里我们认为输入结束了*/
+                            /*和picocom有关，输入回车后会得到一个\r，这里我们认为输入结束了
+                                it is relevent to picocom. After input "ENTER", esp32 will recive '\r'.
+                                We consider it is a end of command*/
+                            if(dtmp[date_point-1] == '\r')
                             {
-                                dtmp[date_point] = '\n';
-                                uart_write_bytes(EX_UART_NUM, "\r\ncomd:", 8);//换行
+                                dtmp[date_point] = '\n';//add a '\n' in the end of string.
+                                /*
+                                    ADD COMMOND  ANALYSIS
+                                    
+                                ((      /|_/|
+                                \\.._.'  , ,\
+                                /\ | '.__ v / 
+                                (_ .   /   "         
+                                ) _)._  _ /
+                                '.\ \|( / ( 
+                                '' ''\\ \\
+                                */
+
+                                uart_write_bytes(EX_UART_NUM, "\r\ncomd:", 8);
                                 date_point = 0;
                             }
-                            else if(dtmp[date_point-1] == 0x03)//这是ctrl+c的取消命令
+                            /*这是ctrl+c的取消命令 
+                                recive ctrl+c, that is mean cancel*/
+                            else if(dtmp[date_point-1] == 0x03)
                             {
                                 uart_write_bytes(EX_UART_NUM, "\r\n^C\r\ncomd:", 12);//换行
                             }
