@@ -1,10 +1,11 @@
 # UART Events Example
 
-This example shows how to use the UART driver to handle special UART events. It also reads data from UART0 directly, and echoes it to console.
+这是一个基于esp32的uart_events例程的做的一个工程。可以像命令行一样从串口0输入输入命令。通过自己添加命令的解析可以在没有很多按钮的情况下方便的调试其他程序，或者实现一些功能。目前我主要利用这个功能配合picocom使用。
+
+This is a project bease on uart_events example program. Esp32 can recive string from uart0 and work like commandline. This program can help you to debug other program or make implement other funtion by these file. I recommond you to use picocom.
 
 # How to use it?
 
-1. Compile and load example from terminl running `make flash monitor`
-2. Being in 'monotor' type samething to see the `UART_DATA` events and the typed data displayed.
+void uart_cmd_init(UBaseType_t uxPriority);函数初始化就可以使用了
 
-See the README.md file in the upper level 'examples' directory for more information about examples.
+Vnitialize by void uart_cmd_init(UBaseType_t uxPriority); funtion.
