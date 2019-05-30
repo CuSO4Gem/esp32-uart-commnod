@@ -40,12 +40,12 @@ static void uart_event_task(void *pvParameters)
                                 dtmp[date_point] = '\n';
                                 if(uart_cmd_callback != NULL)
                                     uart_cmd_callback(dtmp,date_point);
-                                uart_write_bytes(EX_UART_NUM, "\r\ncomd:", 8);
+                                uart_write_bytes(EX_UART_NUM, "\r\ncmd:", 7);
                                 date_point = 0;
                             }
                             else if(dtmp[date_point-1] == 0x03)//这是ctrl+c的取消命令
                             {
-                                uart_write_bytes(EX_UART_NUM, "\r\n^C\r\ncomd:", 12);
+                                uart_write_bytes(EX_UART_NUM, "\r\n^C\r\ncmd:", 11);
                             }
                         }
                         
